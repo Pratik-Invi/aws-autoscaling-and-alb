@@ -1,0 +1,11 @@
+{
+  "name": "aws-autoscaling-test-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
