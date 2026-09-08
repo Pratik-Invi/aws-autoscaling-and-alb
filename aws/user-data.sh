@@ -2,59 +2,33 @@
 
 set -euxo pipefail
 
-exec > >(tee /var/log/aws-autoscaling-lab-user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
+# This is a lab example. Replace these URLs before using the Launch Template.
+BACKEND_REPO="REPLACE_WITH_BACKEND_GIT_URL"
+FRONTEND_REPO="REPLACE_WITH_FRONTEND_GIT_URL"
 
-echo "===== Starting EC2 bootstrap ====="
+dnf update -y || true
+dnf install -y git docker curl
 
-# Update packages
-dnf update -y
+systemctl enable --now docker
 
-# Install required packages
-dnf install -y docker git curl
+# Install Docker Compose plugin if the AMI does not already have it.
+if ! docker compose version >/dev/null 2>&1; then
+  mkdir -p /usr/local/lib/docker/cli-plugins
+  curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose
+  chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+fi
 
-# Start Docker
-systemctl enable docker
-systemctl start docker
+mkdir -p /opt/aws-autoscaling-test
+cd /opt/aws-autoscaling-test
 
-# Allow ec2-user to use Docker
-usermod -aG docker ec2-user
+# Recommended: use one deployment repository containing the compose file.
+# For this lab, copy the complete project to this directory before creating the AMI,
+# or adapt these commands to clone your deployment repository.
+#
+# git clone "$BACKEND_REPO" backend
+# git clone "$FRONTEND_REPO" frontend
+# cp /path/to/docker-compose.yml .
+# docker compose up -d --build
 
-# Install Docker Compose
-mkdir -p /usr/local/lib/docker/cli-plugins
-
-curl -L \
-  https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
-  -o /usr/local/lib/docker/cli-plugins/docker-compose
-
-chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-
-# Install Docker Buildx
-curl -L \
-  https://github.com/docker/buildx/releases/download/v0.28.0/buildx-v0.28.0.linux-amd64 \
-  -o /usr/local/lib/docker/cli-plugins/docker-buildx
-
-chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
-
-# Verify Docker tools
-docker --version
-docker compose version
-docker buildx version
-
-# Clone application
-rm -rf /opt/aws-autoscaling-and-alb
-
-git clone \
-  https://github.com/Pratik-Invi/aws-autoscaling-and-alb.git \
-  /opt/aws-autoscaling-and-alb
-
-# Start application
-cd /opt/aws-autoscaling-and-alb
-
-docker compose build
-docker compose up -d
-
-echo "===== Application deployment completed ====="
-
-docker compose ps
-
-echo "===== EC2 bootstrap completed ====="
+echo "Populate /opt/aws-autoscaling-test with the application before enabling the ASG."
