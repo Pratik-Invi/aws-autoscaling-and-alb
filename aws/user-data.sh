@@ -6,11 +6,9 @@ exec > >(tee /var/log/aws-autoscaling-lab-user-data.log | logger -t user-data -s
 
 echo "===== Starting EC2 bootstrap ====="
 
-# Update packages
-dnf update -y
-
 # Install required packages
-dnf install -y docker git curl
+dnf update -y
+dnf install -y docker git
 
 # Start Docker
 systemctl enable docker
@@ -30,12 +28,12 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 # Install Docker Buildx
 curl -L \
-  https://github.com/docker/buildx/releases/download/v0.28.0/buildx-v0.28.0.linux-amd64 \
+  https://github.com/docker/buildx/releases/download/v0.28.0/docker-buildx-v0.28.0.linux-amd64 \
   -o /usr/local/lib/docker/cli-plugins/docker-buildx
 
 chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
 
-# Verify Docker tools
+# Verify tools
 docker --version
 docker compose version
 docker buildx version
